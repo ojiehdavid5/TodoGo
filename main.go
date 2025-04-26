@@ -13,7 +13,7 @@ import (
 
 func main() {
 
-	connStr := "postgresql://<username>:<password>@<database_ip>/todos?sslmode=disable"
+	connStr := "postgresql://user:postgres@<database_ip>/todos?sslmode=disable"
 
 	//connecting to database
 	db, err := sql.Open("postgres", connStr)
