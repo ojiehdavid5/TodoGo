@@ -11,7 +11,12 @@ import (
 )
 
 func main() {
-	connStr := "postgresql://user:postgres@localhost/todo?sslmode=disable"
+
+
+	user := os.Getenv("DB_USER")
+    password := os.Getenv("DB_PASSWORD")
+
+	connStr := "postgresql://"+ user+":"+password+"@localhost/postgres?sslmode=disable"
 
 	// Connecting to database
 	db, err := sql.Open("postgres", connStr)
@@ -35,9 +40,9 @@ func main() {
 		return postHandler(c, db)
 	})
 
-	app.Put("/update", func(c *fiber.Ctx) error {
-		return putHandler(c, db)
-	})
+	// app.Put("/update", func(c *fiber.Ctx) error {
+	// 	return putHandler(c, db)
+	// })
 
 	app.Delete("/delete", func(c *fiber.Ctx) error {
 		return deleteHandler(c, db)
@@ -49,6 +54,7 @@ func main() {
 func indexHandler(c *fiber.Ctx, db *sql.DB) error {
 	var todos []string
 	rows, err := db.Query("SELECT item FROM todos")
+	fmt.Println("Querying todos")
 	if err != nil {
 		log.Println("Error querying todos:", err)
 		return c.Status(500).JSON(fiber.Map{"error": "Database query error"})
@@ -56,12 +62,12 @@ func indexHandler(c *fiber.Ctx, db *sql.DB) error {
 	defer rows.Close() // Close rows after processing
 
 	for rows.Next() {
-		var item string
-		if err := rows.Scan(&item); err != nil {
+		var Item string
+		if err := rows.Scan(&Item); err != nil {
 			log.Println("Error scanning row:", err)
 			return c.Status(500).JSON(fiber.Map{"error": "Error reading data"})
 		}
-		todos = append(todos, item)
+		todos = append(todos, Item)
 	}
 
 	return c.JSON( fiber.Map{
@@ -91,21 +97,6 @@ func postHandler(c *fiber.Ctx, db *sql.DB) error {
 	return c.Redirect("/")
 }
 
-func putHandler(c *fiber.Ctx, db *sql.DB) error {
-	oldItem := c.Query("olditem")
-	newItem := c.Query("newitem")
-	if oldItem == "" || newItem == "" {
-		return c.Status(400).JSON(fiber.Map{"error": "Parameters missing"})
-	}
-
-	_, err := db.Exec("UPDATE todos SET item=$1 WHERE item=$2", newItem, oldItem)
-	if err != nil {
-		log.Fatalf("Error executing query: %v", err)
-		return c.Status(500).JSON(fiber.Map{"error": "Database update error"})
-	}
-
-	return c.Redirect("/")
-}
 
 func deleteHandler(c *fiber.Ctx, db *sql.DB) error {
 	item := c.Query("item")
